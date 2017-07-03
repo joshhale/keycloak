@@ -68,7 +68,9 @@ public class Profile {
             if (jbossServerConfigDir != null) {
                 File file = new File(jbossServerConfigDir, "profile.properties");
                 if (file.isFile()) {
-                    props.load(new FileInputStream(file));
+                    try (FileInputStream fis = new FileInputStream(file)) {
+                        props.load(fis);
+                    }
                 }
             }
 

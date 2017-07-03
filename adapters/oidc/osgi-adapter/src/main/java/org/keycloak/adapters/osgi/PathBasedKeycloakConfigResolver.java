@@ -24,6 +24,7 @@ import org.keycloak.adapters.OIDCHttpFacade;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -55,13 +56,13 @@ public class PathBasedKeycloakConfigResolver implements KeycloakConfigResolver {
             }
 
             String absolutePath = keycloakConfig + File.separator + webContext + "-keycloak.json";
-            InputStream is = null;
-            try {
-                is = new FileInputStream(absolutePath);
+            try (InputStream is = new FileInputStream(absolutePath)) {
+                deployment = KeycloakDeploymentBuilder.build(is);
             } catch (FileNotFoundException e){
                 throw new IllegalStateException("Not able to find the file " + absolutePath);
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to close file " + absolutePath, e);
             }
-            deployment = KeycloakDeploymentBuilder.build(is);
             cache.put(webContext, deployment);
         }
 

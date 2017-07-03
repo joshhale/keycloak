@@ -222,9 +222,7 @@ public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
     }
 
 
-
     public CommandResult process(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-
         // see if Content-Type header is explicitly set to non-json value
         Header ctype = headers.get("content-type");
 
@@ -232,23 +230,39 @@ public abstract class AbstractRequestCmd extends AbstractAuthOptionsCmd {
 
         CmdStdinContext<JsonNode> ctx = new CmdStdinContext<>();
 
-        if (file != null) {
-            if (ctype != null && !"application/json".equals(ctype.getValue())) {
-                if ("-".equals(file)) {
-                    content = System.in;
-                } else {
-                    try {
-                        content = new BufferedInputStream(new FileInputStream(file));
-                    } catch (FileNotFoundException e) {
-                        throw new RuntimeException("File not found: " + file);
+        try {
+            if (file != null) {
+                if (ctype != null && !"application/json".equals(ctype.getValue())) {
+                    if ("-".equals(file)) {
+                        content = System.in;
+                    } else {
+                        try {
+                            content = new BufferedInputStream(new FileInputStream(file));
+                        } catch (FileNotFoundException e) {
+                            throw new RuntimeException("File not found: " + file);
+                        }
                     }
+                } else {
+                    ctx = parseFileOrStdin(file);
                 }
-            } else {
-                ctx = parseFileOrStdin(file);
+            } else if (body != null) {
+                content = new ByteArrayInputStream(body.getBytes(Charset.forName("utf-8")));
             }
-        } else if (body != null) {
-            content = new ByteArrayInputStream(body.getBytes(Charset.forName("utf-8")));
+
+            return process(commandInvocation, content, ctx);
         }
+        finally {
+            try {
+                if (content != null)
+                    content.close();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to close InputStream", e);
+            }
+        }
+    }
+
+    private CommandResult process(CommandInvocation commandInvocation, InputStream content, CmdStdinContext<JsonNode> ctx)
+            throws CommandException, InterruptedException {
 
         ConfigData config = loadConfig();
         config = copyWithServerInfo(config);

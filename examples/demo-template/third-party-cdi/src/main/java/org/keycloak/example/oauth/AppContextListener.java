@@ -28,6 +28,7 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.annotation.WebListener;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -44,20 +45,28 @@ public class AppContextListener implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent sce) {
         ServletContext context = sce.getServletContext();
-
         InputStream is = null;
-        String path = context.getInitParameter("keycloak.config.file");
-        if (path == null) {
-            is = context.getResourceAsStream("/WEB-INF/keycloak.json");
-        } else {
-            try {
+
+        try {
+            String path = context.getInitParameter("keycloak.config.file");
+            if (path == null) {
+                is = context.getResourceAsStream("/WEB-INF/keycloak.json");
+            } else {
                 is = new FileInputStream(path);
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
+            }
+            ServletOAuthClientBuilder.build(is, oauthClient);
+            logger.info("OAuth client configured and started");
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } finally {
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to close InputStream", e);
             }
         }
-        ServletOAuthClientBuilder.build(is, oauthClient);
-        logger.info("OAuth client configured and started");
     }
 
     @Override

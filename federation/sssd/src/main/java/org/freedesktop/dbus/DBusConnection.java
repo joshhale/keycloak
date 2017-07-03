@@ -241,16 +241,20 @@ public class DBusConnection extends AbstractConnection {
                         String display = System.getenv("DISPLAY");
                         if (null == display) throw new DBusException(getString("cannotResolveSessionBusAddress"));
                         File uuidfile = new File("/var/lib/dbus/machine-id");
-                        if (!uuidfile.exists()) throw new DBusException(getString("cannotResolveSessionBusAddress"));
-                        try {
-                            BufferedReader r = new BufferedReader(new FileReader(uuidfile));
+                        File addressfile;
+                        try (FileReader fr = new FileReader(uuidfile)) {
+                            BufferedReader r = new BufferedReader(fr);
                             String uuid = r.readLine();
                             String homedir = System.getProperty("user.home");
-                            File addressfile = new File(homedir + "/.dbus/session-bus",
+                            addressfile = new File(homedir + "/.dbus/session-bus",
                                     uuid + "-" + display.replaceAll(":([0-9]*)\\..*", "$1"));
                             if (!addressfile.exists())
                                 throw new DBusException(getString("cannotResolveSessionBusAddress"));
-                            r = new BufferedReader(new FileReader(addressfile));
+                        } catch (IOException e) {
+                            throw new DBusException(getString("cannotResolveSessionBusAddress"));
+                        }
+                        try (FileReader fr = new FileReader(addressfile)) {
+                            BufferedReader r = new BufferedReader(fr);
                             String l;
                             while (null != (l = r.readLine())) {
                                 if (Debug.debug) Debug.print(Debug.VERBOSE, "Reading D-Bus session data: " + l);

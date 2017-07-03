@@ -31,6 +31,7 @@ import org.keycloak.saml.common.exceptions.ParsingException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -240,27 +241,38 @@ public class DeploymentBuilder {
             throw new RuntimeException(e);
         }
         InputStream is = null;
-        if (key.getKeystore().getFile() != null) {
-            File fp = new File(key.getKeystore().getFile());
-            if (!fp.exists()) {
+        try {
+                if (key.getKeystore().getFile() != null) {
+                File fp = new File(key.getKeystore().getFile());
+                if (!fp.exists()) {
+                }
+                try {
+                    is = new FileInputStream(fp);
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException("KeyStore " + key.getKeystore().getFile() + " does not exist");
+                }
+
+            } else {
+                is = resourceLoader.getResourceAsStream(key.getKeystore().getResource());
+                if (is == null) {
+                    throw new RuntimeException("KeyStore " + key.getKeystore().getResource() + " does not exist");
+                }
             }
             try {
-                is = new FileInputStream(fp);
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException("KeyStore " + key.getKeystore().getFile() + " does not exist");
+                keyStore.load(is, key.getKeystore().getPassword().toCharArray());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
+        } finally {
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to close InputStream", e);
+            }
+        }
 
-        } else {
-            is = resourceLoader.getResourceAsStream(key.getKeystore().getResource());
-            if (is == null) {
-                throw new RuntimeException("KeyStore " + key.getKeystore().getResource() + " does not exist");
-            }
-        }
-        try {
-            keyStore.load(is, key.getKeystore().getPassword().toCharArray());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
         return keyStore;
     }
 }

@@ -361,9 +361,9 @@ public class KeycloakApplication extends Application {
             while (tokenizer.hasMoreTokens()) {
                 String file = tokenizer.nextToken().trim();
                 RealmRepresentation rep;
-                try {
-                    rep = loadJson(new FileInputStream(file), RealmRepresentation.class);
-                } catch (FileNotFoundException e) {
+                try (FileInputStream fis = new FileInputStream(file)) {
+                    rep = loadJson(fis, RealmRepresentation.class);
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
                 importRealm(rep, "file " + file);
@@ -414,8 +414,8 @@ public class KeycloakApplication extends Application {
                 ServicesLogger.LOGGER.imprtingUsersFrom(addUserFile);
 
                 List<RealmRepresentation> realms;
-                try {
-                    realms = JsonSerialization.readValue(new FileInputStream(addUserFile), new TypeReference<List<RealmRepresentation>>() {
+                try (FileInputStream fis = new FileInputStream(addUserFile)) {
+                    realms = JsonSerialization.readValue(fis, new TypeReference<List<RealmRepresentation>>() {
                     });
                 } catch (IOException e) {
                     ServicesLogger.LOGGER.failedToLoadUsers(e);

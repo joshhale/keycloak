@@ -302,8 +302,10 @@ public class CertificateValidator {
                         if (!f.canRead()) {
                             throw new IOException(String.format("Unable to read CRL from \"%path\"", f.getAbsolutePath()));
                         }
-                        X509CRL crl = loadFromStream(cf, new FileInputStream(f.getAbsolutePath()));
-                        return Collections.singleton(crl);
+                        try (FileInputStream fis = new FileInputStream(f.getAbsolutePath())) {
+                            X509CRL crl = loadFromStream(cf, fis);
+                            return Collections.singleton(crl);
+                        }
                     }
                 }
             }

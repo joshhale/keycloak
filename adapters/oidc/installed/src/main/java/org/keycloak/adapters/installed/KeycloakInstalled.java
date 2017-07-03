@@ -292,8 +292,10 @@ public class KeycloakInstalled {
             try {
                 Socket socket = server.accept();
 
-                BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                String request = br.readLine();
+                String request;
+                try (BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+                    request = br.readLine();
+                }
 
                 String url = request.split(" ")[1];
                 if (url.indexOf('?') >= 0) {

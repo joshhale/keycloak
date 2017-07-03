@@ -106,7 +106,10 @@ public class DockerComposeYamlInstallationProvider implements ClientInstallation
 
         // Write README to .zip
         zipOutput.putNextEntry(new ZipEntry(ROOT_DIR + "README.md"));
-        final String readmeContent = new BufferedReader(new InputStreamReader(DockerComposeYamlInstallationProvider.class.getResourceAsStream("/DockerComposeYamlReadme.md"))).lines().collect(Collectors.joining("\n"));
+        final String readmeContent;
+        try (InputStreamReader isr = new InputStreamReader(DockerComposeYamlInstallationProvider.class.getResourceAsStream("/DockerComposeYamlReadme.md"))) {
+            readmeContent = new BufferedReader(isr).lines().collect(Collectors.joining("\n"));
+        }
         zipOutput.write(readmeContent.getBytes());
         zipOutput.closeEntry();
 

@@ -52,7 +52,9 @@ public class JavaKeystoreKeyProvider extends AbstractRsaKeyProvider {
     protected Keys loadKeys(RealmModel realm, ComponentModel model) {
         try {
             KeyStore keyStore = KeyStore.getInstance("JKS");
-            keyStore.load(new FileInputStream(model.get(JavaKeystoreKeyProviderFactory.KEYSTORE_KEY)), model.get(JavaKeystoreKeyProviderFactory.KEYSTORE_PASSWORD_KEY).toCharArray());
+            try (FileInputStream fis = new FileInputStream(model.get(JavaKeystoreKeyProviderFactory.KEYSTORE_KEY))) {
+                keyStore.load(fis, model.get(JavaKeystoreKeyProviderFactory.KEYSTORE_PASSWORD_KEY).toCharArray());
+            }
 
             PrivateKey privateKey = (PrivateKey) keyStore.getKey(model.get(JavaKeystoreKeyProviderFactory.KEY_ALIAS_KEY), model.get(JavaKeystoreKeyProviderFactory.KEY_PASSWORD_KEY).toCharArray());
             PublicKey publicKey = KeyUtils.extractPublicKey(privateKey);

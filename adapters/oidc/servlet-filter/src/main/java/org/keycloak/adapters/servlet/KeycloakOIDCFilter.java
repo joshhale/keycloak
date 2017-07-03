@@ -111,21 +111,31 @@ public class KeycloakOIDCFilter implements Filter {
             } else {
                 String fp = filterConfig.getInitParameter(CONFIG_FILE_PARAM);
                 InputStream is = null;
-                if (fp != null) {
-                    try {
-                        is = new FileInputStream(fp);
-                    } catch (FileNotFoundException e) {
-                        throw new RuntimeException(e);
+                try {
+                    if (fp != null) {
+                        try {
+                            is = new FileInputStream(fp);
+                        } catch (FileNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+                        String path = "/WEB-INF/keycloak.json";
+                        String pathParam = filterConfig.getInitParameter(CONFIG_PATH_PARAM);
+                        if (pathParam != null) path = pathParam;
+                        is = filterConfig.getServletContext().getResourceAsStream(path);
                     }
-                } else {
-                    String path = "/WEB-INF/keycloak.json";
-                    String pathParam = filterConfig.getInitParameter(CONFIG_PATH_PARAM);
-                    if (pathParam != null) path = pathParam;
-                    is = filterConfig.getServletContext().getResourceAsStream(path);
+                    KeycloakDeployment kd = createKeycloakDeploymentFrom(is);
+                    deploymentContext = new AdapterDeploymentContext(kd);
+                    log.fine("Keycloak is using a per-deployment configuration.");
+                } finally {
+                    try {
+                        if (is != null) {
+                            is.close();
+                        }
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to close InputStream", e);
+                    }
                 }
-                KeycloakDeployment kd = createKeycloakDeploymentFrom(is);
-                deploymentContext = new AdapterDeploymentContext(kd);
-                log.fine("Keycloak is using a per-deployment configuration.");
             }
         }
         filterConfig.getServletContext().setAttribute(AdapterDeploymentContext.class.getName(), deploymentContext);

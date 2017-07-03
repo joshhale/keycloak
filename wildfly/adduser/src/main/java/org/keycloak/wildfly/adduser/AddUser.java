@@ -124,7 +124,9 @@ public class AddUser {
     private static void createUser(File addUserFile, String realmName, String userName, String password, String rolesString, int iterations) throws Exception {
         List<RealmRepresentation> realms;
         if (addUserFile.isFile()) {
-            realms = JsonSerialization.readValue(new FileInputStream(addUserFile), new TypeReference<List<RealmRepresentation>>() {});
+            try (FileInputStream fis = new FileInputStream(addUserFile)) {
+                realms = JsonSerialization.readValue(fis, new TypeReference<List<RealmRepresentation>>() {});
+            }
         } else {
             realms = new LinkedList<>();
         }

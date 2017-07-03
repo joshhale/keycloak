@@ -548,8 +548,7 @@ public final class OCSPUtils {
         JcaX509CertificateHolder holder = new JcaX509CertificateHolder(cert);
         Extension aia = holder.getExtension(Extension.authorityInfoAccess);
         if (aia != null) {
-            try {
-                ASN1InputStream in = new ASN1InputStream(aia.getExtnValue().getOctetStream());
+            try (ASN1InputStream in = new ASN1InputStream(aia.getExtnValue().getOctetStream())) {
                 ASN1Sequence seq = (ASN1Sequence)in.readObject();
                 AuthorityInformationAccess authorityInfoAccess = AuthorityInformationAccess.getInstance(seq);
                 for (AccessDescription ad : authorityInfoAccess.getAccessDescriptions()) {

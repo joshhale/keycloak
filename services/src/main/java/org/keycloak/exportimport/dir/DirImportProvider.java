@@ -130,8 +130,10 @@ public class DirImportProvider implements ImportProvider {
         });
 
         // Import realm first
-        FileInputStream is = new FileInputStream(realmFile);
-        final RealmRepresentation realmRep = JsonSerialization.readValue(is, RealmRepresentation.class);
+        final RealmRepresentation realmRep;
+        try (FileInputStream is = new FileInputStream(realmFile)) {
+            realmRep = JsonSerialization.readValue(is, RealmRepresentation.class);
+        }
         final AtomicBoolean realmImported = new AtomicBoolean();
 
         KeycloakModelUtils.runJobInTransaction(factory, new ExportImportSessionTask() {
@@ -147,22 +149,24 @@ public class DirImportProvider implements ImportProvider {
         if (realmImported.get()) {
             // Import users
             for (final File userFile : userFiles) {
-                final FileInputStream fis = new FileInputStream(userFile);
                 KeycloakModelUtils.runJobInTransaction(factory, new ExportImportSessionTask() {
                     @Override
                     protected void runExportImportTask(KeycloakSession session) throws IOException {
-                        ImportUtils.importUsersFromStream(session, realmName, JsonSerialization.mapper, fis);
-                        logger.infof("Imported users from %s", userFile.getAbsolutePath());
+                        try (FileInputStream fis = new FileInputStream(userFile)) {
+                            ImportUtils.importUsersFromStream(session, realmName, JsonSerialization.mapper, fis);
+                            logger.infof("Imported users from %s", userFile.getAbsolutePath());
+                        }
                     }
                 });
             }
             for (final File userFile : federatedUserFiles) {
-                final FileInputStream fis = new FileInputStream(userFile);
                 KeycloakModelUtils.runJobInTransaction(factory, new ExportImportSessionTask() {
                     @Override
                     protected void runExportImportTask(KeycloakSession session) throws IOException {
-                        ImportUtils.importFederatedUsersFromStream(session, realmName, JsonSerialization.mapper, fis);
-                        logger.infof("Imported federated users from %s", userFile.getAbsolutePath());
+                        try (FileInputStream fis = new FileInputStream(userFile)) {
+                            ImportUtils.importFederatedUsersFromStream(session, realmName, JsonSerialization.mapper, fis);
+                            logger.infof("Imported federated users from %s", userFile.getAbsolutePath());
+                        }
                     }
                 });
             }

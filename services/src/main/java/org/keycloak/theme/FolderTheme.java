@@ -48,16 +48,30 @@ public class FolderTheme implements Theme {
         this.properties = new Properties();
 
         File propertiesFile = new File(themeDir, "theme.properties");
-        if (propertiesFile .isFile()) {
-            Charset encoding = PropertiesUtil.detectEncoding(new FileInputStream(propertiesFile));
-            try (Reader reader = new InputStreamReader(new FileInputStream(propertiesFile), encoding)) {
-                properties.load(reader);
-            }
+        if (loadProperties(properties, propertiesFile)) {
             parentName = properties.getProperty("parent");
             importName = properties.getProperty("import");
         }
 
         resourcesDir = new File(themeDir, "resources");
+    }
+
+    /**
+     * Attempt to load {@code Properties} from the given {@code file}, but
+     * return false instead if there is no such file.
+     */
+    private static boolean loadProperties(Properties properties, File file) throws IOException {
+        if (!file.isFile()) {
+            return false;
+        }
+        Charset encoding;
+        try (FileInputStream fis = new FileInputStream(file)) {
+            encoding = PropertiesUtil.detectEncoding(fis);
+        }
+        try (Reader reader = new InputStreamReader(new FileInputStream(file), encoding)) {
+            properties.load(reader);
+            return true;
+        }
     }
 
     @Override
@@ -124,14 +138,8 @@ public class FolderTheme implements Theme {
         }
 
         Properties m = new Properties();
-
         File file = new File(themeDir, "messages" + File.separator + baseBundlename + "_" + locale.toString() + ".properties");
-        if (file.isFile()) {
-            Charset encoding = PropertiesUtil.detectEncoding(new FileInputStream(file));
-            try (Reader reader = new InputStreamReader(new FileInputStream(file), encoding)) {
-                m.load(reader);
-            }
-        }
+        loadProperties(m, file);
         return m;
     }
 

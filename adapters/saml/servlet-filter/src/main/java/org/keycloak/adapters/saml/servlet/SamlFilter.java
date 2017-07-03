@@ -85,38 +85,48 @@ public class SamlFilter implements Filter {
         } else {
             String fp = filterConfig.getInitParameter("keycloak.config.file");
             InputStream is = null;
-            if (fp != null) {
-                try {
-                    is = new FileInputStream(fp);
-                } catch (FileNotFoundException e) {
-                    throw new RuntimeException(e);
+            try {
+                if (fp != null) {
+                    try {
+                        is = new FileInputStream(fp);
+                    } catch (FileNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    String path = "/WEB-INF/keycloak-saml.xml";
+                    String pathParam = filterConfig.getInitParameter("keycloak.config.path");
+                    if (pathParam != null)
+                        path = pathParam;
+                    is = filterConfig.getServletContext().getResourceAsStream(path);
                 }
-            } else {
-                String path = "/WEB-INF/keycloak-saml.xml";
-                String pathParam = filterConfig.getInitParameter("keycloak.config.path");
-                if (pathParam != null)
-                    path = pathParam;
-                is = filterConfig.getServletContext().getResourceAsStream(path);
-            }
-            final SamlDeployment deployment;
-            if (is == null) {
-                log.info("No adapter configuration. Keycloak is unconfigured and will deny all requests.");
-                deployment = new DefaultSamlDeployment();
-            } else {
+                final SamlDeployment deployment;
+                if (is == null) {
+                    log.info("No adapter configuration. Keycloak is unconfigured and will deny all requests.");
+                    deployment = new DefaultSamlDeployment();
+                } else {
+                    try {
+                        ResourceLoader loader = new ResourceLoader() {
+                            @Override
+                            public InputStream getResourceAsStream(String resource) {
+                                return filterConfig.getServletContext().getResourceAsStream(resource);
+                            }
+                        };
+                        deployment = new DeploymentBuilder().build(is, loader);
+                    } catch (ParsingException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                deploymentContext = new SamlDeploymentContext(deployment);
+                log.fine("Keycloak is using a per-deployment configuration.");
+            } finally {
                 try {
-                    ResourceLoader loader = new ResourceLoader() {
-                        @Override
-                        public InputStream getResourceAsStream(String resource) {
-                            return filterConfig.getServletContext().getResourceAsStream(resource);
-                        }
-                    };
-                    deployment = new DeploymentBuilder().build(is, loader);
-                } catch (ParsingException e) {
-                    throw new RuntimeException(e);
+                    if (is != null) {
+                        is.close();
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException("Failed to close InputStream", e);
                 }
             }
-            deploymentContext = new SamlDeploymentContext(deployment);
-            log.fine("Keycloak is using a per-deployment configuration.");
         }
         idMapper = new InMemorySessionIdMapper();
         filterConfig.getServletContext().setAttribute(SamlDeploymentContext.class.getName(), deploymentContext);

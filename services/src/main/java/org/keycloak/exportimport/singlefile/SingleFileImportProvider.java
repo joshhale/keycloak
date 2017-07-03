@@ -73,8 +73,9 @@ public class SingleFileImportProvider implements ImportProvider {
 
     protected void checkRealmReps() throws IOException {
         if (realmReps == null) {
-            FileInputStream is = new FileInputStream(file);
-            realmReps = ImportUtils.getRealmsFromStream(JsonSerialization.mapper, is);
+            try (FileInputStream is = new FileInputStream(file)) {
+                realmReps = ImportUtils.getRealmsFromStream(JsonSerialization.mapper, is);
+            }
         }
     }
 

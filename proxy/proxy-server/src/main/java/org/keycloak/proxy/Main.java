@@ -37,8 +37,10 @@ public class Main {
             System.exit(1);
             return;
         }
-        FileInputStream fis = new FileInputStream(file);
-        Undertow proxyServer = ProxyServerBuilder.build(fis);
+        Undertow proxyServer;
+        try (FileInputStream fis = new FileInputStream(file)) {
+            proxyServer = ProxyServerBuilder.build(fis);
+        }
         proxyServer.start();
 
     }
