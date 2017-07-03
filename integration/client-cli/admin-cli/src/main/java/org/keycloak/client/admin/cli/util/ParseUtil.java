@@ -98,7 +98,7 @@ public class ParseUtil {
                 }
                 content = JsonSerialization.writeValueAsString(result);
             } else {
-                throw new RuntimeException("Setting attributes is not supported for type: " + result.getClass().getName());
+                throw new RuntimeException("Failed to set attribute");
             }
         } catch (IOException e) {
             throw new RuntimeException("Failed to merge set attributes with configuration from file", e);
